@@ -18,24 +18,8 @@ client = OpenAI(
 TELEGRAM_TOKEN = os.getenv("BOT_TOKEN")
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"
 GROUP_CHAT_ID = os.getenv("GROUP_CHAT_ID")
-
-FRIEND_TELEGRAM_IDS = {
-    "Alycia": "374376624",
-    "Jun Wei": "475250601",
-    "Sophia": "454600713",
-    "Karthik": "477194086",
-    "Jia Cheng": "201728571",
-    "Ivy": "331750002",
-    "Xavier": "226773207",
-    "Yueqian": "856222623",
-    "Jia Xin": "832453333",
-    "Chloe": "1465137417",
-    "Alan": "272230434",
-    "Chi Wei": "1240608373",
-    "Zedd": "493743963",
-    "Vit Chun": "716214884",
-    "Robbie": "13911296",
-}
+mappings = os.getenv("FRIEND_TELEGRAM_MAPPINGS")
+FRIEND_TELEGRAM_IDS = json.loads(mappings)
 
 def auto_refresh():
   duty_schedule = load_duty_schedule()
