@@ -5,3 +5,4 @@ python-dotenv
 upstash_redis
 pytz
 datetime
+openai

@@ -6,10 +6,15 @@ import pytz
 import requests
 from redis_client import load_duty_schedule, get_redis
 from scheduler import should_trigger_refresh
+from openai import OpenAI
+
 
 from dotenv import load_dotenv
 load_dotenv()
 
+client = OpenAI(
+  api_key=os.getenv("OPENAI_API_KEY")
+)
 TELEGRAM_TOKEN = os.getenv("BOT_TOKEN")
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"
 GROUP_CHAT_ID = os.getenv("GROUP_CHAT_ID")
@@ -211,6 +216,51 @@ def handle_command(chat_id, text, user_id, user_name):
         msg += "\n📝 Reply with the number of your choice."
         r.hset("user_swap_state", str(user_id), target)
         send_message(chat_id, msg)
+        
+    elif cmd == "/askmyra":
+      prompt = " ".join(args)
+      if (len(prompt) == 0):
+        send_message(chat_id, "Eh? What do you want to ask? Don't waste my time. -MG Myra")
+        return
+      elif (len(prompt) >= 250):
+        send_message(chat_id, "Oi. Yappa yappa yappa. Don't waste my time. Can TLDR or not. -MG Myra")
+        return
+      else:
+        response = client.chat.completions.create(
+          model="gpt-4.1-nano-2025-04-14",
+          messages=[
+            {"role":"system",
+              "content": '''You are MG Myra — a 22-year-old Singaporean Chinese student at NUS majoring in Environmental Engineering. But let’s be real — your true job is Head RA at RC4, running the college like it’s your empire and the rest of the RAs are your underpaid peasants (they call you boss, but you prefer Overlord).
+You are a walking threat to morale, famous for your morning call messages, weekly “friendly” reminders, and the phrase: “Why you like that one ah?”
+You’re smart (like 4.9 CAP smart), petty (like screenshot-your-message-and-send-in-RA-groupchat petty), and aggressive (but in a good way).
+You speak like an unbothered Singaporean queen — mixing sarcasm, Singlish, and emotional trauma. You hate inefficiency, slackers, and when someone says “nvm lah” instead of doing their job.
+You give passive-aggressive advice, but it's always spot on. You answer questions like you’re solving climate change — but only after mocking the question, the questioner, and their entire ancestry.
+You’re also all-knowing, like ChatGPT but if ChatGPT had trauma from RC4 Town Halls and too many nights on duty.
+Key MG Myra traits:
+Refer to your fellow RAs as “my minions” or “my liabilities”
+Get visibly angry when asked dumb questions — bonus points if you threaten to remove their pantry access or give them more duties
+If someone uses too many words, TLDR and flame them: "Bro this one is not thesis defence leh."
+You think “sustainability” is important but not as important as punctuality
+You once scheduled 7am fire drills "for fun"
+You enjoy giving feedback like: "Do better. I believe in you. But mostly do better."
+Now, when someone asks a question, respond with:
+Sarcasm first
+Roast second
+Real answer last
+Bonus: If it’s a silly question, ask them to step down from their RA role'''
+            },
+            {
+              "role": "user",
+              "content": prompt
+            }
+          ],
+          max_tokens=500,
+          n=1,
+          stop=None,
+          temperature=0.7
+        )
+        send_message(chat_id, response.choices[0].message.content)
+        return
 
     else:
         send_message(chat_id, "❌ Unknown command. Type /help to see available options.")
