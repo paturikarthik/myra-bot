@@ -6,3 +6,7 @@ upstash_redis
 pytz
 datetime
 openai
+PyPDF2
+pymongo
+filetype
+numpy
