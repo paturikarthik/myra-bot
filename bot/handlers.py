@@ -214,11 +214,11 @@ def handle_command(chat_id, text, user_id, user_name):
 • `/help` – Show this list"""
         send_message(chat_id, msg)
 
-    elif cmd = "/gay":
+    elif cmd == "/gay":
         num = random.randint(75, 100)
         msg = f"You are {num}% gay!"
         send_message(chat_id, msg)
-        
+
     elif cmd == "/view_schedule":
         duty_schedule = load_duty_schedule()
         if not duty_schedule:
