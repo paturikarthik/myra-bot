@@ -216,7 +216,7 @@ def handle_command(chat_id, text, user_id, user_name):
 
     elif cmd == "/gay":
         num = random.randint(75, 100)
-        msg = f"You are {num}% gay!"
+        msg = f"{user_name} is {num}% gay!"
         send_message(chat_id, msg)
 
     elif cmd == "/view_schedule":
