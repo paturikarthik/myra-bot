@@ -14,7 +14,7 @@ import tempfile
 from pymongo import MongoClient
 
 import numpy as np
-
+import random
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -212,6 +212,11 @@ def handle_command(chat_id, text, user_id, user_name):
 • `/swap_duty` – Start duty swap request
 • `/cover_duty` – Cover someone's duty slot
 • `/help` – Show this list"""
+        send_message(chat_id, msg)
+
+    elif cmd == "/gay":
+        num = random.randint(75, 100)
+        msg = f"You are {num}% gay!"
         send_message(chat_id, msg)
 
     elif cmd == "/view_schedule":
