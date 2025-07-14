@@ -215,9 +215,12 @@ def handle_command(chat_id, text, user_id, user_name):
         send_message(chat_id, msg)
 
     elif cmd == "/gay":
-        num = random.randint(75, 100)
-        msg = f"{user_name} is {num}% gay!"
-        send_message(chat_id, msg)
+        if user_name == "Jun Wei":
+            send_message(chat_id, "Scale Broken!! User is unbelievably gay! 🤯🤯🤯")
+        else:
+            num = random.randint(75, 100)
+            msg = f"{user_name} is {num}% gay!"
+            send_message(chat_id, msg)
 
     elif cmd == "/view_schedule":
         duty_schedule = load_duty_schedule()
