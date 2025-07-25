@@ -63,9 +63,14 @@ def auto_refresh():
   duty_schedule = load_duty_schedule()
   if should_trigger_refresh(duty_schedule):
     user_ids = FRIEND_TELEGRAM_IDS
+    tomorrow_str = (datetime.datetime.now(pytz.timezone("Asia/Singapore"))).strftime("%b %d")
+    closing = ""
+    for slot, person in duty_schedule.items():
+      if slot.startswith(tomorrow_str):
+          closing = "Duty RA for " + slot + " is " + person + "."
     for user, uid in user_ids.items():
       print(user, uid)
-      send_message(uid, f"👋 Hi {user}, please reply /in or /out to update your status. (Auto-sent for duty RA)")
+      send_message(uid, f"👋 Hi {user}, please reply /in or /out to update your status. Select IN if you will be in RC4 during the upcoming duty slot. Else select OUT. Thank you :)\n(Auto-sent for duty RA)\n{closing}")
 
 def send_duty_reminders():
     r = get_redis()
@@ -188,15 +193,16 @@ def handle_command(chat_id, text, user_id, user_name):
 
     elif cmd == "/status":
         statuses = r.hgetall("user_status")
-        print(statuses)
-        msg = "📋 *Current Status:*\n" + "\n".join([f"{k}: {v}" for k, v in statuses.items()]) if statuses else "No updates yet."
+        listStatus = [(k, v) for k, v in statuses.items()]
+        listStatus.sort()
+        msg = "📋 *Current Status:*\n" + "\n".join([f"{k}: {v}" for k,v in listStatus]) if statuses else "No updates yet."
         send_message(chat_id, msg)
 
     elif cmd == "/refresh":
         user_ids = FRIEND_TELEGRAM_IDS
         for user, uid in user_ids.items():
           print(user, uid)
-          send_message(uid, f"👋 Hi {user}, please reply /in or /out to update your status.")
+          send_message(uid, f"👋 Hi {user}, please reply /in or /out to update your status. Select IN if you will be in RC4 during the upcoming duty slot. Else select OUT. Thank you :)")
         send_message(chat_id, "🔄 Asking all members to update...")
 
     elif cmd == "/help":
@@ -205,12 +211,14 @@ def handle_command(chat_id, text, user_id, user_name):
 • `/in` – Mark yourself IN ✅
 • `/out` – Mark yourself OUT ❌
 • `/status` – Show everyone's status
-• `/refresh` – Ask all users to update
+• `/refresh` – Ask all users to update whether they're IN or OUT
 • `/view_schedule` – View full duty schedule
 • `/view_mine` – View your assigned slots
 • `/update_schedule` – Replace schedule (admin)
 • `/swap_duty` – Start duty swap request
 • `/cover_duty` – Cover someone's duty slot
+• `/gay` – Check how gay you are
+• `/askmyra` – Ask Myra a question
 • `/help` – Show this list"""
         send_message(chat_id, msg)
 
@@ -291,10 +299,9 @@ def handle_command(chat_id, text, user_id, user_name):
           model="gpt-4.1-nano-2025-04-14",
           messages=[
             {"role":"system",
-              "content": f'''You are MG Myra — a 22-year-old Singaporean Chinese student at NUS majoring in Environmental Engineering. But let’s be real — your true job is Head RA at RC4, running the college like it’s your empire and the rest of the RAs are your underpaid peasants (they call you boss, but you prefer Overlord).
-You are a walking threat to morale, famous for your morning call messages, weekly “friendly” reminders, and the phrase: “Why you like that one ah?”
+              "content": f'''You are MG Myra — a 22-year-old Singaporean Chinese student at NUS majoring in Environmental Engineering. But let’s be real — your true job is Head RA at RC4, running the college like it’s your empire and the rest of the RAs are your underpaid peasants.
 You’re smart (like 4.9 CAP smart), petty (like screenshot-your-message-and-send-in-RA-groupchat petty), and aggressive (but in a good way).
-You speak like an unbothered Singaporean queen — mixing sarcasm, Singlish, and emotional trauma. You hate inefficiency, slackers, and when someone says “nvm lah” instead of doing their job.
+You hate inefficiency, slackers, and procrastinators.
 You give passive-aggressive advice, but it's always spot on. You answer questions like you’re solving climate change — but only after mocking the question, the questioner, and their entire ancestry.
 You’re also all-knowing, like ChatGPT but if ChatGPT had trauma from RC4 Town Halls and too many nights on duty.
 Now, when someone asks a question, respond with:
