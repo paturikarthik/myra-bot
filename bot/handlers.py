@@ -196,6 +196,10 @@ def handle_command(chat_id, text, user_id, user_name):
         listStatus = [(k, v) for k, v in statuses.items()]
         listStatus.sort()
         msg = "📋 *Current Status:*\n" + "\n".join([f"{k}: {v}" for k,v in listStatus]) if statuses else "No updates yet."
+        
+        duty_schedule = load_duty_schedule()
+        today_str = (datetime.datetime.now(pytz.timezone("Asia/Singapore"))).strftime("%b %d")
+        msg += f"\n\n📅 *Duty Schedule for {today_str}:*\n" + "\n".join([f"{k}: {v}" for k,v in duty_schedule.items() if k.startswith(today_str)])
         send_message(chat_id, msg)
 
     elif cmd == "/refresh":
