@@ -2,7 +2,7 @@
 from flask import Flask, request
 import os
 from dotenv import load_dotenv
-from handlers import handle_update, auto_refresh, send_duty_reminders
+from handlers import handle_update, auto_refresh, send_duty_reminders, daily_checkup
 
 load_dotenv()
 
@@ -23,6 +23,11 @@ def refresh():
 @app.route("/reminder", methods=["GET"])
 def reminder():
     send_duty_reminders()
+    return "OK", 200
+
+@app.route("/wellbeing", methods=["GET"])
+def wellbeing():
+    daily_checkup()
     return "OK", 200
 
 if __name__ == "__main__":

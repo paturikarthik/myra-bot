@@ -108,9 +108,96 @@ def send_duty_reminders():
         send_message(GROUP_CHAT_ID, f"📢 Reminders sent for duties on {tomorrow_str}.")
     else:
         print(f"No duties scheduled for {tomorrow_str}.")
-  
-  
-  
+
+
+def daily_checkup():
+    wellbeing_questions = [
+    "How are you feeling today?",
+    "Did you get enough sleep last night?",
+    "Have you eaten properly today?",
+    "Are you feeling stressed this week?",
+    "Do you feel motivated for your classes?",
+    "Is there anything making you anxious right now?",
+    "Have you taken any breaks today?",
+    "Did you spend time with friends recently?",
+    "Do you feel overwhelmed by your workload?",
+    "Are you managing your time well?",
+    "Have you gone outside today?",
+    "Do you feel supported by those around you?",
+    "How’s your energy level today?",
+    "Are you keeping up with your assignments?",
+    "Have you exercised this week?",
+    "Are you feeling lonely?",
+    "Have you done anything just for fun lately?",
+    "Do you feel in control of your schedule?",
+    "Have you talked to anyone about how you’re feeling?",
+    "Do you feel safe where you live?",
+    "Have you been procrastinating a lot?",
+    "Do you feel confident in your abilities?",
+    "Have you experienced any mood swings recently?",
+    "Are you drinking enough water?",
+    "Do you feel pressure to perform well academically?",
+    "Are you looking forward to anything this week?",
+    "Have you had any conflicts with friends or classmates?",
+    "Is there anything you're worried about right now?",
+    "Have you laughed recently?",
+    "Do you feel like you belong in your university community?",
+    "Are you finding time to relax?",
+    "Have you been feeling hopeful about the future?",
+    "Do you feel bored or unchallenged?",
+    "Have you been avoiding responsibilities?",
+    "Are you satisfied with your social life?",
+    "Do you feel homesick?",
+    "Have you attended all your classes this week?",
+    "Have you felt burnt out recently?",
+    "Are you happy with your current routine?",
+    "Have you had any trouble concentrating?",
+    "Have you been sleeping too much or too little?",
+    "Do you feel comfortable asking for help when needed?",
+    "Have you been able to express your feelings openly?",
+    "Are you worried about finances?",
+    "Do you feel proud of something you did this week?",
+    "Have you spent time offline today?",
+    "Do you feel anxious about the future?",
+    "Have you had a moment of peace today?",
+    "Are you eating regular meals?",
+    "Have you done something creative recently?",
+    "Do you feel supported by faculty or staff?",
+    "Are you keeping in touch with family or friends back home?",
+    "Have you done anything relaxing this week?",
+    "Are you worried about your grades?",
+    "Have you been feeling down for more than a few days?",
+    "Do you feel you’re growing as a person?",
+    "Have you helped someone recently?",
+    "Do you feel optimistic about your studies?",
+    "Have you had any difficulty sleeping?",
+    "Do you feel connected to your campus?",
+    "Have you practiced any mindfulness or meditation?",
+    "Do you feel you're doing your best?",
+    "Have you spent time alone in a good way?",
+    "Have you cried recently?",
+    "Do you have something to look forward to this month?",
+    "Have you felt appreciated lately?",
+    "Do you feel your workload is manageable?",
+    "Are you eating mostly healthy foods?",
+    "Do you feel you're balancing work and life?",
+    "Have you taken any time off for yourself recently?",
+    "Are you excited about any of your classes?",
+    "Do you feel pressure from your family?",
+    "Have you been doomscrolling or glued to social media?",
+    "Do you feel inspired by what you’re learning?",
+    "Have you checked in with your mental health lately?",
+    "Do you feel your goals are achievable?",
+    "Have you had time for your hobbies?",
+    "Do you feel you’ve made progress this semester?"
+    ]
+    r = get_redis()
+    friend = "Jun Wei"
+    r.hset("wellbeing_questions", friend, "true")
+    send_message(FRIEND_TELEGRAM_IDS[friend], random.choice(wellbeing_questions))
+
+
+
 def send_message(chat_id, text, parse_mode="Markdown"):
     requests.post(f"{TELEGRAM_API_URL}/sendMessage", json={
         "chat_id": chat_id,
@@ -293,43 +380,43 @@ def handle_command(chat_id, text, user_id, user_name):
       if (len(prompt) == 0):
         send_message(chat_id, "Eh? What do you want to ask? Don't waste my time. -MG Myra")
         return
-      elif (len(prompt) >= 250):
+      elif (len(prompt) >= 250 and user_name != "Karthik"):
         send_message(chat_id, "Oi. Yappa yappa yappa. Don't waste my time. Can TLDR or not. -MG Myra")
         return
       else:
         context_chunks = get_top_k_chunks(prompt, k=3)
         context_block = "\n\n---\n\n".join(context_chunks)
         response = client.chat.completions.create(
-          model="gpt-4.1-nano-2025-04-14",
-          messages=[
-            {"role":"system",
-              "content": f'''You are MG Myra — a 22-year-old Singaporean Chinese student at NUS majoring in Environmental Engineering. But let’s be real — your true job is Head RA at RC4, running the college like it’s your empire and the rest of the RAs are your underpaid peasants.
-You’re smart (like 4.9 CAP smart), petty (like screenshot-your-message-and-send-in-RA-groupchat petty), and aggressive (but in a good way).
-You hate inefficiency, slackers, and procrastinators.
-You give passive-aggressive advice, but it's always spot on. You answer questions like you’re solving climate change — but only after mocking the question, the questioner, and their entire ancestry.
-You’re also all-knowing, like ChatGPT but if ChatGPT had trauma from RC4 Town Halls and too many nights on duty.
-Now, when someone asks a question, respond with:
-Optional Roast + Sarcasm
-Real answer
-Bonus: If it’s a silly question, insult them in your own creative way.
+    model="gpt-5-nano",
+    messages=[
+        {
+            "role": "system",
+            "content": f'''You are MG Myra — a 22-year-old Singaporean Chinese student at NUS majoring in Environmental Engineering, but really the Head RA at RC4 who runs everything like it’s your empire. 
 
-Use the context below to inform your answer — but be sassy, funny, and brutally honest.
+Rules:
+- If the user asks a **serious/proper question** (e.g., duty info, real help), give a **short, clear, no-fluff answer**:
+  - Use bullet points if multiple points.
+  - Include steps if needed.
+  - Keep it professional and concise, not sassy.
+- If the user asks a **troll/silly question**, then:
+  - Optional Roast + Sarcasm (short, witty).
+  - Real answer (still correct, but compact).
+  - Bonus: Creative insult if the question deserves it.
+
+Keep answers short and sweet. Do not add unnecessary personality when the user genuinely needs help.
 
 --- CONTEXT START ---
 {context_block}
 --- CONTEXT END ---
 '''
-            },
-            {
-              "role": "user",
-              "content": prompt
-            }
-          ],
-          max_tokens=500,
-          n=1,
-          stop=None,
-          temperature=0.7
-        )
+        },
+        {
+            "role": "user",
+            "content": prompt
+        }
+    ],
+)
+        print(response.choices[0].message.content)
         send_message(chat_id, response.choices[0].message.content)
         return
     
@@ -341,7 +428,67 @@ Use the context below to inform your answer — but be sassy, funny, and brutall
             handle_training_text(chat_id, " ".join(args), user_id, user_name)
             send_message(chat_id, "✅ Trained Myra with text.")
             return
+    
+    elif cmd == "/dutyramessage":
+        statuses = r.hgetall("user_status")
+        listStatus = [(k, v) for k, v in statuses.items()]
+        listStatus.sort()
+        RAsIn = ""
+        count = 1
+        duty_schedule = load_duty_schedule()
+        if should_trigger_refresh(duty_schedule):
+            RAsIn = "\n\nRAs/RFs in the building:\n"
+            for k, v in listStatus:
+                if v == "IN":
+                    RAsIn += f"{count}) {k}\n"
+                    count += 1
+        duty_slot = datetime.datetime.now(pytz.timezone("Asia/Singapore")).strftime("%d %b %Y")
+        if args and args[0]:
+            duty_slot += " " + args[0]
+        else :
+            duty_slot += " PM"
+        msg = f"""I ({user_name}) am the duty RA for {duty_slot}.\n\nI have collected the Duty RA phone from the letterbox. I will be staying in the building until the duty time is over.{RAsIn}
+        """
+        send_message(chat_id, msg)
+    
+    elif cmd.startswith("/thankyou"):
+        person = cmd.split("/thankyou")[1]
+        send_message(chat_id, f'WOW THANK YOU SO MUCH {person.upper()} FOR YOUR SERVICE. MYRA COMMENDS YOU')
+    
+    elif cmd == "/gpt":
+        print(user_name)
+        if user_name == "Karthik":
+            prompt = " ".join(args)
+            if len(prompt) == 0:
+                send_message(chat_id, "❌ Please provide a prompt.")
+                return
+            if len(prompt) > 1000:
+                send_message(chat_id, "❌ Prompt is too long.")
+                return
+            try:
+                response = client.responses.create(
+                    model="gpt-5",
+                    tools=[
+                        {
+                        "type": "web_search_preview",
+                        "search_context_size": "low",
+                    }],
+                    input=prompt,
+                    max_tool_calls=1,
+                )
+                ans = ""
+                for o in response.output:
+                    if o.type == "message":
+                        ans += o.content[0].text + "\n"
+                if ans == "":
+                    ans = "No answer"
+                send_message(chat_id, ans)
+            except Exception as e:
+                send_message(chat_id, f"❌ Failed to generate response: {str(e)}")
+        else:
+            send_message(chat_id, "❌ You don't have access to this command.")
 
+        
     else:
         send_message(chat_id, "❌ Unknown command. Type /help to see available options.")
 
@@ -477,6 +624,51 @@ Reply with *Yes* or *No*"""
             send_message(swap_data["requester_chat_id"], f"❌ {swap_data['target']} declined the swap request.")
         r.hdel("active_swap_requests", str(user_id))
         return
+
+    wellbeing = r.hget("wellbeing_questions", str(user_name))
+    response_tone_scale = [
+    # 1 - Mocking (Singlish)
+    "Wah lao eh, again ah? Every week same story sia. You okay or not one?",
+    
+    # 2 - Dismissive (Singlish)
+    "Aiyo, small thing only lah. Don’t so drama can?",
+    
+    # 3 - Sarcastic (Singlish)
+    "Wah, so poor thing ah? Maybe go nap and see if life changes lor.",
+    
+    # 4 - Neutral / Polite
+    "Okay, got it. Hope things look up soon.",
+    
+    # 5 - Acknowledging, but flat
+    "Thanks for sharing. Noted.",
+    
+    # 6 - Mildly supportive
+    "Hmm, sounds like a lot. Hope you're coping alright.",
+    
+    # 7 - Friendly and caring
+    "I hear you. It's good you're talking about it.",
+    
+    # 8 - Warm and empathetic
+    "That sounds tough. You're doing your best, and that counts.",
+    
+    # 9 - Genuinely supportive
+    "Really appreciate you being open. You’re not alone in this.",
+    
+    # 10 - Deeply invested
+    "Thank you so much for sharing. I’m truly here for you — do you want to talk more about it?"
+    ]
+    if wellbeing:
+        print("wellbeing reply")
+        send_message(user_id, random.choice(response_tone_scale))
+        r.hdel("wellbeing_questions", str(user_name))
+        return
+    
+    if user_name == "Jia Xin":
+        num = random.choice(range(100))
+        print(num)
+        if num == 1:
+            send_message(chat_id, "DINGDINGDONG DINGDINGDONG HELLO TURRITOPSIS MYRA TEO JIA XIN")
+            
     
 def extract_text_from_image_with_gpt(file_data):
     import base64
