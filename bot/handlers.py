@@ -12,6 +12,7 @@ import filetype
 from PyPDF2 import PdfReader
 import tempfile
 from pymongo import MongoClient
+from docx import Document
 
 import numpy as np
 import random
@@ -312,6 +313,50 @@ def handle_command(chat_id, text, user_id, user_name):
 • `/askmyra` – Ask Myra a question
 • `/help` – Show this list"""
         send_message(chat_id, msg)
+        
+    elif cmd == "/eatwhat":
+        options = [
+            "FC kokka noodle",
+            "FC mala",
+            "FC danlao",
+            "FC miniwok",
+            "FC yongtaufoo",
+            "FC cai png",
+            "FC indian",
+            "FC nasi lemak",
+            "FC Japanese",
+            "FC Chicken Rice",
+            "Casa 1",
+            "Casa 2",
+            "Jollibee",
+            "Subway",
+            "Udon Don Bar",
+            "WaaCow",
+            "Bismillah",
+            "Hwang's",
+            "LiXin noodles",
+            "Royals Bistro",
+            "FF mala",
+            "FF jap x western fusion",
+            "FF banmian",
+            "FF miniwok",
+            "FF snail noodles",
+            "FF XLB",
+            "Jun Wei",
+            "Fong Seng",
+            "Amaans",
+            "Nana Thai",
+            "Niqqis",
+            "Macs"
+        ]
+        if random.randint(0,50) == 1 and user_name == "Jia Xin":
+            send_message(chat_id, "I highly reccomend you eat Jun Wei.")
+        elif random.randint(0,3) == 1 and user_name == "Alycia":
+            send_message(chat_id, "MEOWWWWW. Why u cannot decide lol noob")
+        elif random.randint(0,50) == 1:
+            send_message(chat_id, "Eat DH la fuck. Pay so much already.")
+        else:
+            send_message(chat_id, random.choice(options))
 
     elif cmd == "/gay":
         if user_name == "Jun Wei":
@@ -487,7 +532,37 @@ Keep answers short and sweet. Do not add unnecessary personality when the user g
                 send_message(chat_id, f"❌ Failed to generate response: {str(e)}")
         else:
             send_message(chat_id, "❌ You don't have access to this command.")
+    elif cmd == "/applyleave":
+        # Only allow in PM (private chat)
+        if int(chat_id) < 0:
+            send_message(chat_id, "❌ This command only works in private messages.")
+            return
+        
+        r.hset("leave_application_state", str(user_id), "waiting_for_details")
+        
+        template_msg = """📝 *Leave Application Form*
 
+Please provide the following details in your next message:
+
+• Name
+• Matriculation Number
+• Contact Number (while on leave)
+• Email
+• Reason for Leave
+• Number of Leave Days
+• From Date & Time (e.g., Dec 1 2024, 9:00 AM)
+• To Date & Time (e.g., Dec 3 2024, 6:00 PM)
+• Covering Person's Name
+• Covering Person's Contact Number
+• Covering Person's Email
+• Remaining Leave Days (after deducting this application)
+
+Just write naturally - I'll understand! 😊"""
+        
+        temp ='''
+    Name:\nMatriculation Number:\nContact Number:\nEmail:\nReason for Leave:\nNumber of Leave Days:\nFrom Date & Time:\nTo Date & Time:\nCovering Person's Name:\nCovering Person's Contact Number:\nCovering Person's Email:\nRemaining Leave Days (after deducting this application):'''
+        send_message(chat_id, template_msg)
+        send_message(chat_id, temp)
         
     else:
         send_message(chat_id, "❌ Unknown command. Type /help to see available options.")
@@ -668,7 +743,125 @@ Reply with *Yes* or *No*"""
         print(num)
         if num == 1:
             send_message(chat_id, "DINGDINGDONG DINGDINGDONG HELLO TURRITOPSIS MYRA TEO JIA XIN")
+    
+    # Check if user is in leave application flow
+    leave_state = r.hget("leave_application_state", str(user_id))
+    
+    if leave_state == "waiting_for_details":
+        try:
+            # Use GPT to extract structured data
+            extraction_prompt = f"""Extract the following information from the user's message and return ONLY a JSON object with these exact keys:
+
+{{
+  "name": "string",
+  "matric_number": "string",
+  "contact_number": "string",
+  "email": "string",
+  "reason": "string",
+  "num_days": "number",
+  "from_date": "string (format: YYYY-MM-DD HH:MM)",
+  "to_date": "string (format: YYYY-MM-DD HH:MM)",
+  "covering_person_name": "string",
+  "covering_person_contact": "string",
+  "covering_person_email": "string",
+  "remaining_days": "number"
+}}
+
+User's message:
+{text}
+
+Return ONLY the JSON object. If any field is missing or unclear, set its value to null."""
+
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are a data extraction assistant. Return ONLY valid JSON, no explanation."},
+                    {"role": "user", "content": extraction_prompt}
+                ],
+                temperature=0
+            )
             
+            extracted_data = json.loads(response.choices[0].message.content.strip())
+            
+            # Check for missing fields
+            missing_fields = [k for k, v in extracted_data.items() if v is None or v == ""]
+            
+            if missing_fields:
+                missing_list = "\n• ".join(missing_fields)
+                send_message(chat_id, f"❌ Missing or unclear information:\n\n• {missing_list}\n\nPlease provide these details and try again.")
+                return
+            
+            # Store extracted data
+            r.hset("leave_application_data", str(user_id), json.dumps(extracted_data))
+            r.hset("leave_application_state", str(user_id), "waiting_for_confirmation")
+            
+            # Show human-readable summary
+            summary = f"""✅ *Please confirm your details:*
+
+👤 Name: {extracted_data['name']}
+🎓 Matric Number: {extracted_data['matric_number']}
+📱 Contact: {extracted_data['contact_number']}
+📧 Email: {extracted_data['email']}
+
+📝 Reason: {extracted_data['reason']}
+📅 Leave Days: {extracted_data['num_days']}
+🗓 From: {extracted_data['from_date']}
+🗓 To: {extracted_data['to_date']}
+
+👥 Covering Person: {extracted_data['covering_person_name']}
+📱 Their Contact: {extracted_data['covering_person_contact']}
+📧 Their Email: {extracted_data['covering_person_email']}
+
+📊 Remaining Days After: {extracted_data['remaining_days']}
+
+Reply *YES* to generate the form, or *NO* to cancel."""
+            
+            send_message(chat_id, summary)
+            
+        except json.JSONDecodeError:
+            send_message(chat_id, "❌ Failed to process your information. Please try again with clearer formatting.")
+        except Exception as e:
+            send_message(chat_id, f"❌ Error: {str(e)}")
+        return
+    
+    elif leave_state == "waiting_for_confirmation":
+        if text.strip().upper() == "YES":
+            try:
+                # Get stored data
+                data_json = r.hget("leave_application_data", str(user_id))
+                data = json.loads(data_json)
+                
+                # Generate the form
+                send_message(chat_id, "⏳ Generating your leave application form...")
+                
+                docx_path = generate_leave_form(data, user_id)
+                
+                # Send files
+                send_document(chat_id, docx_path, "Leave_Application.docx")
+
+                send_message(chat_id, "✅ Your leave application forms have been generated!\n\nPlease follow the SOP:\n1. Discuss with Head RA\n2. Email to house RF\n3. Wait for approval")
+                
+                # Cleanup
+                r.hdel("leave_application_state", str(user_id))
+                r.hdel("leave_application_data", str(user_id))
+                
+                # Clean up temp files
+                import os
+                os.remove(docx_path)
+                
+            except Exception as e:
+                send_message(chat_id, f"❌ Failed to generate form: {str(e)}")
+                r.hdel("leave_application_state", str(user_id))
+                r.hdel("leave_application_data", str(user_id))
+        
+        elif text.strip().upper() == "NO":
+            send_message(chat_id, "❌ Leave application cancelled.")
+            r.hdel("leave_application_state", str(user_id))
+            r.hdel("leave_application_data", str(user_id))
+        
+        return
+
+
     
 def extract_text_from_image_with_gpt(file_data):
     import base64
@@ -780,3 +973,90 @@ def handle_training_text(chat_id, text, user_id, user_name):
 
     except Exception as e:
         send_message(chat_id, f"❌ Failed to train Myra: {str(e)}")
+
+def generate_leave_form(data, user_id):
+    """Generate filled leave application form"""
+    import os
+    import tempfile
+    import re
+    
+    # Load template
+    template_path = "PersonalLeave.docx"
+    doc = Document(template_path)
+    
+    # Define replacements with unique patterns to avoid double-replacement
+    replacements = [
+        (r'Name\s+Type here', f'Name {data["name"]}'),
+        (r'Matriculation Number\s+Type here', f'Matriculation Number {data["matric_number"]}'),
+        (r'Contact Number\s+Type here', f'Contact Number {data["contact_number"]}'),
+        (r'Email\s+Type here', f'Email {data["email"]}'),
+        (r'Reasons for Leave\s+Type here', f'Reasons for Leave {data["reason"]}'),
+        (r'Number of Requested leave days\s+Type here', f'Number of Requested leave days {data["num_days"]}'),
+        (r'From\s+Type here', f'From {data["from_date"]}'),
+        (r'To\s+Type here', f'To {data["to_date"]}'),
+        (r'Duty to be covered by\s+Name\s+Type here', f'Duty to be covered by Name {data["covering_person_name"]}'),
+        (r'Contact \(HP\)\s+Type here', f'Contact (HP) {data["covering_person_contact"]}'),
+    ]
+    
+    # Special handling for the big merged cell with all fields (Row 8)
+    big_cell_pattern = r'Reasons for Leave\s+Type here.*?Remaining Leave Days.*?Type here'
+    
+    def replace_big_cell(text):
+        """Replace all Type here instances in the big merged cell"""
+        # Replace in specific order to avoid conflicts
+        text = re.sub(r'Reasons for Leave\s+Type here', f'Reasons for Leave {data["reason"]}', text, count=1)
+        text = re.sub(r'Number of Requested leave days\s+Type here', f'Number of Requested leave days {data["num_days"]}', text, count=1)
+        text = re.sub(r'From\s+Type here', f'From {data["from_date"]}', text, count=1)
+        text = re.sub(r'To\s+Type here', f'To {data["to_date"]}', text, count=1)
+        text = re.sub(r'Name\s+Type here', f'Name {data["covering_person_name"]}', text, count=1)
+        text = re.sub(r'Contact \(HP\)\s+Type here', f'Contact (HP) {data["covering_person_contact"]}', text, count=1)
+        # Handle the Email for covering person (comes after Contact HP)
+        parts = text.split('Contact (HP)')
+        if len(parts) > 1:
+            parts[1] = re.sub(r'Email\s+Type here', f'Email {data["covering_person_email"]}', parts[1], count=1)
+            text = 'Contact (HP)'.join(parts)
+        text = re.sub(r'Remaining Leave Days.*?Type here', f'Remaining Leave Days in the current semester (after deducting the proposed leave days in the current application) {data["remaining_days"]}', text, count=1)
+        return text
+    
+    # Process all tables
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                original_text = cell.text
+                
+                # Check if this is the big merged cell (Row 8)
+                if 'Reasons for Leave' in original_text and 'Remaining Leave Days' in original_text:
+                    new_text = replace_big_cell(original_text)
+                    if new_text != original_text:
+                        # Clear and rewrite the cell
+                        cell.text = new_text
+                
+                # Handle simpler cells (like Name, Matric Number in earlier rows)
+                else:
+                    for pattern, replacement in replacements:
+                        if re.search(pattern, original_text):
+                            new_text = re.sub(pattern, replacement, original_text, count=1)
+                            if new_text != original_text:
+                                cell.text = new_text
+                                break
+                
+                # Handle signature date cell
+                if 'Signature Date' in original_text:
+                    # Replace the two Type here instances with empty signature and today's date
+                    parts = original_text.split('Type here')
+                    if len(parts) >= 3:
+                        cell.text = parts[0] + '________________' + parts[1] + datetime.now().strftime("%Y-%m-%d") + parts[2]
+    
+    # Save DOCX to /tmp directory (Vercel allows writes here)
+    docx_output = f"/tmp/leave_application_{user_id}.docx"
+    doc.save(docx_output)
+    
+    return docx_output
+
+
+def send_document(chat_id, file_path, filename):
+    """Send a document file via Telegram"""
+    with open(file_path, 'rb') as f:
+        files = {'document': (filename, f)}
+        data = {'chat_id': chat_id}
+        requests.post(f"{TELEGRAM_API_URL}/sendDocument", data=data, files=files)

@@ -10,3 +10,4 @@ PyPDF2
 pymongo
 filetype
 numpy
+python-docx
